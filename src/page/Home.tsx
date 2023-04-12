@@ -1,10 +1,43 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import { addDoc, collection, getDocs } from "@firebase/firestore";
 
 const Home = () => {
   const navigate = useNavigate();
+
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+
+  const user = auth.currentUser?.uid;
+  const addUser = async (e: any) => {
+    e.preventDefault();
+    try {
+      const docRef = await addDoc(collection(db, "users"), {
+        id: user,
+        name: name,
+        age: age,
+      });
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  };
+
+  const fetchPost = async () => {
+    await getDocs(collection(db, "users")).then((querySnapshot) => {
+      const newData = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+      }));
+      const filteredData = newData.filter((el) => el.id === user);
+      console.log(filteredData);
+    });
+  };
+
+  useEffect(() => {
+    fetchPost();
+  }, []);
 
   const handleLogout = () => {
     signOut(auth)
@@ -27,6 +60,21 @@ const Home = () => {
           <button onClick={handleLogout}>Logout</button>
         </div>
       </nav>
+      <form onSubmit={addUser}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Age"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+        />
+        <button type="submit">Add User</button>
+      </form>
     </>
   );
 };

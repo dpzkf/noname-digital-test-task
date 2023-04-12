@@ -1,19 +1,17 @@
 import React, { useState } from "react";
 import {
   GoogleAuthProvider,
+  fetchSignInMethodsForEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import app, { auth } from "../firebase";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useFirebase } from "react-redux-firebase";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const firebase = useFirebase();
-
   const onLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -32,20 +30,19 @@ const Login = () => {
 
   const providerForGoogle = new GoogleAuthProvider();
 
-  const signInWithGoogle = () => {
-    signInWithPopup(auth, providerForGoogle)
-      .then((result) => {
-        // The signed-in user info.
-        const user = result.user;
+  const signInWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, providerForGoogle);
+      const email = result.user?.email;
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email || "");
+      if (signInMethods.length === 0) {
+        console.log("first time");
+      } else {
         navigate("/home");
-      })
-      .catch((error) => {
-        // Handle Errors here.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // The email of the user's account used.
-        console.error(errorCode, errorMessage);
-      });
+      }
+    } catch (error: any) {
+      console.log(error.message);
+    }
   };
 
   return (
